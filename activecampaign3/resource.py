@@ -44,5 +44,9 @@ class Resource(object):
         response = klass.GET(params=search)
         return SearchResults(klass, response)
 
+    def __init__(self, attrs):
+        for k, v in attrs.items():
+            setattr(self, k, v)
+
     def save(self):
         raise Exception("not implemented")
