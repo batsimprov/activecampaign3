@@ -10,7 +10,7 @@ through our Improv @ Work program.
 
 Visit us online https://improv.org
 
-Get in touch mailto:bats@improv.org
+Get in touch bats@improv.org
 
 If you find this software useful, please consider making a tax-deductible
 donation to BATS Improv (it's quick and easy)!
