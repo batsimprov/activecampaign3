@@ -21,4 +21,6 @@ The activecampaign3 package integrates with Active Campaign's Version 3 API.
 
 http://developers.activecampaign.com/
 
+ALPHA SOFTWARE in early development
+
 Licensed under the 3-clause BSD, see LICENSE.txt
