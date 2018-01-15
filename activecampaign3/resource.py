@@ -24,11 +24,16 @@ class InvalidParameters(ActiveCampaignException):
         return "%s: %s -> %s" % (self.title, self.code, self.source)
 
 def GET(endpoint, **kwargs):
+    logger.debug("GET of %s" % endpoint)
     return requests.get(endpoint, headers=headers, **kwargs)
 
 def POST(endpoint, **kwargs):
     logger.debug("POST to %s" % endpoint)
     return requests.post(endpoint, headers=headers, **kwargs)
+
+def DELETE(endpoint, **kwargs):
+    logger.debug("DELETE to %s" % endpoint)
+    return requests.delete(endpoint, headers=headers, **kwargs)
 
 def check_status(response):
     if response.status_code == 200:
@@ -96,6 +101,16 @@ class Resource(object):
         return response.json()
 
     @classmethod
+    def DELETE(klass, path='', params=None):
+        fullpath = klass.api_endpoint() + path
+        logger.debug("about to DELETE path %s" % fullpath)
+        if params is not None:
+            logger.debug("  with params %s" % str(params))
+        response = DELETE(fullpath, params=params)
+        check_status(response)
+        return response.json()
+
+    @classmethod
     def search(klass, search=None):
         if search is not None:
             for key in search.keys():
@@ -137,7 +152,20 @@ class Resource(object):
         else:
             resource_name = inflection.singularize(self.__class__._resource_path)
             data = { resource_name : self._save_params() }
-            response = self.__class__.POST(data=json.dumps(data))
-            logger.debug("response text is %s" % response.text)
-            new_resource_info = response.json()
+            new_resource_info = self.__class__.POST(data=json.dumps(data))
             self.resource_id = new_resource_info[resource_name]['id']
+
+    def delete(self):
+        if not hasattr(self, 'resource_id'):
+            raise Exception("can't delete without a resource id")
+        else:
+            assert self.resource_id is not None
+            self.__class__.DELETE(path=self.resource_id)
+            del self.resource_id
+            return self
+
+    def _desc(self):
+        return id(self)
+
+    def __repr__(self):
+        return "<%s %s>" % (self.__class__.__name__, self._desc())
