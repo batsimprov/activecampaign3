@@ -5,8 +5,8 @@ Interval's delicious craft cocktails, coffee & tea). Come on a Friday for one
 of our fast-paced, variety-packed shortform shows. Or come on a Saturday for
 one of our world-famous genre longform shows. Either way, you’re sure to
 experience the unique blend of theatre and comedy that is BATS Improv. We also
-offer classes for individuals and customized corporate training and experiences
-through our Improv @ Work program.
+offer classes at all levels for individuals, and customized corporate training
+and experiences through our Improv @ Work program.
 
 Visit us online https://improv.org
 
