@@ -1,3 +1,8 @@
 api:
     url: "https://xxxxxx.api-us1.com"
     key: ""
+
+logs:
+    dir: logs
+    file: ac3.log
+    level: DEBUG
