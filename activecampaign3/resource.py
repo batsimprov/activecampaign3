@@ -1,9 +1,10 @@
 from activecampaign3.config import CONFIG
 from activecampaign3.logger import logger
-import inflection
-import requests
-import json
 from collections.abc import Sequence
+import copy
+import inflection
+import json
+import requests
 
 headers = {
     "Api-Token" : CONFIG['api']['key'],
@@ -11,17 +12,31 @@ headers = {
     }
 
 class ActiveCampaignException(Exception):
-    pass
+    """
+    Parent class for wrapping error messages returned from the ActiveCampaign API.
+    """
 
 class InvalidParameters(ActiveCampaignException):
-    def __init__(self, title, detail, code, source):
-        self.title = title
-        self.detail = detail
-        self.code = code
-        self.source = source
+    def __init__(self, errors):
+        assert len(errors) > 0
+        self.errors = errors
 
     def __repr__(self):
-        return "%s: %s -> %s" % (self.title, self.code, self.source)
+        err = self.errors[0]
+        if len(self.errors) == 1:
+            return "InvalidParameters error %s: %s -> %s" % (err['title'], err['code'], err['source'])
+        else:
+            return "%s InvalidParameters errors, inspect 'errors' attr, first is: %s" % (len(self.errors), err['title'])
+
+class UserFeedback(Exception):
+    """
+    An error because a user has provided invalid data.
+    """
+
+class UnexpectedCondition(Exception):
+    """
+    Something is wrong, please report this issue to the developer.
+    """
 
 def GET(endpoint, **kwargs):
     logger.debug("GET of %s" % endpoint)
@@ -45,16 +60,16 @@ def check_status(response):
     elif response.status_code == 201:
         logger.info("resource created!")
     elif response.status_code == 422:
-        logger.error(response.text)
-        error = response.json()['errors'][0]
-        raise InvalidParameters(error['title'], error['detail'], error['code'], error['source'])
+        logger.error(json.dumps(response.json(), sort_keys=True, indent=4))
+        errors = response.json()['errors']
+        raise InvalidParameters(errors)
     else:
         logger.error(response.text)
-        raise Exception("bad status %s" % response.status_code)
+        raise UnexpectedCondition("bad status %s" % response.status_code)
 
 class SearchResults(Sequence):
     def __init__(self, klass, response):
-        logger.debug("initializing %s with:" % (klass.__name__))
+        logger.debug("creating SearchResults object for %s:" % (klass.__name__))
         logger.debug(json.dumps(response, sort_keys=True, indent=4))
         self.total = int(response['meta']['total'])
         if 'page_input' in response['meta']:
@@ -78,12 +93,21 @@ class SearchResults(Sequence):
         return len(self.raw_results)
 
 class Resource(object):
+    _valid_search_params = []
+    _common_rename_params = [('resource_id', 'id')]
+    _rename_params = []
+
     @classmethod
     def api_endpoint(klass):
         return CONFIG['api']['url'] + "/api/3/" + klass._resource_path + "/"
 
     def get_resource_info(self, path):
         return self.__class__.GET("%s/%s" % (self.resource_id, path))[path]
+
+    @classmethod
+    def get(klass, resource_id):
+        path = inflection.singularize(klass._resource_path)
+        return klass(**klass.GET(path=resource_id)[path])
 
     @classmethod
     def GET(klass, path='', params=None):
@@ -145,7 +169,6 @@ class Resource(object):
         total = int(results.total)
         if total == 1:
             logger.debug("found unique record")
-            print(results)
             return results[0]
         elif total == 0:
             logger.debug("no records found, creating new")
@@ -156,18 +179,45 @@ class Resource(object):
             return obj
         else:
             logger.debug("total %s" % results.total)
-            raise Exception("multiple objects found")
+            raise UnexpectedCondition("multiple objects found")
 
     def post_init(self):
         pass
 
+    @classmethod
+    def rename_params(klass):
+        return klass._common_rename_params + klass._rename_params
+
+    @classmethod
+    def rename_params_dict(klass):
+        if not hasattr(klass, '_rename_params_dict'):
+            klass._rename_params_dict = {
+                    remote_name: local_name
+                    for (local_name, remote_name)
+                    in klass.rename_params()}
+        return klass._rename_params_dict
+
     def __init__(self, **attrs):
+        for local_name, remote_name in self.rename_params():
+            if remote_name in attrs:
+                setattr(self, local_name, attrs[remote_name])
+                del attrs[remote_name]
         for k, v in attrs.items():
             setattr(self, k, v)
         self.post_init()
 
+    def __setattr__(self, key, value):
+        if key == 'group' and isinstance(value, str):
+            raise UserFeedback("to set a numeric group id, use group_id, not group")
+        super().__setattr__(key, value)
+
     def _save_params(self):
-        return { k:v for k, v in self.__dict__.items() if k in self.__class__._valid_save_params }
+        params = copy.copy(self.__dict__)
+        for local_name, remote_name in self.rename_params():
+            if local_name in params:
+                params[remote_name] = params[local_name]
+                del params[local_name]
+        return { k:v for k, v in params.items() if k in self.__class__._valid_save_params }
 
     def save(self):
         if hasattr(self, 'resource_id'):
@@ -183,7 +233,7 @@ class Resource(object):
 
     def delete(self):
         if not hasattr(self, 'resource_id'):
-            raise Exception("can't delete without a resource id")
+            raise UserFeedback("can't delete without a resource id")
         else:
             assert self.resource_id is not None
             self.__class__.DELETE(path=self.resource_id)
