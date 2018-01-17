@@ -31,6 +31,10 @@ def POST(endpoint, **kwargs):
     logger.debug("POST to %s" % endpoint)
     return requests.post(endpoint, headers=headers, **kwargs)
 
+def PUT(endpoint, **kwargs):
+    logger.debug("PUT to %s" % endpoint)
+    return requests.put(endpoint, headers=headers, **kwargs)
+
 def DELETE(endpoint, **kwargs):
     logger.debug("DELETE to %s" % endpoint)
     return requests.delete(endpoint, headers=headers, **kwargs)
@@ -78,6 +82,9 @@ class Resource(object):
     def api_endpoint(klass):
         return CONFIG['api']['url'] + "/api/3/" + klass._resource_path + "/"
 
+    def get_resource_info(self, path):
+        return self.__class__.GET("%s/%s" % (self.resource_id, path))[path]
+
     @classmethod
     def GET(klass, path='', params=None):
         fullpath = klass.api_endpoint() + path
@@ -97,6 +104,18 @@ class Resource(object):
         if data is not None:
             logger.debug("  with data %s" % str(data))
         response = POST(fullpath, params=params, data=data)
+        check_status(response)
+        return response.json()
+
+    @classmethod
+    def PUT(klass, path='', data=None, params=None):
+        fullpath = klass.api_endpoint() + path
+        logger.debug("about to PUT to path %s" % fullpath)
+        if params is not None:
+            logger.debug("  with params %s" % str(params))
+        if data is not None:
+            logger.debug("  with data %s" % str(data))
+        response = PUT(fullpath, params=params, data=data)
         check_status(response)
         return response.json()
 
@@ -139,16 +158,23 @@ class Resource(object):
             logger.debug("total %s" % results.total)
             raise Exception("multiple objects found")
 
+    def post_init(self):
+        pass
+
     def __init__(self, **attrs):
         for k, v in attrs.items():
             setattr(self, k, v)
+        self.post_init()
 
     def _save_params(self):
         return { k:v for k, v in self.__dict__.items() if k in self.__class__._valid_save_params }
 
     def save(self):
         if hasattr(self, 'resource_id'):
-            raise Exception("implement update")
+            resource_name = inflection.singularize(self.__class__._resource_path)
+            data = { resource_name : self._save_params() }
+            new_resource_info = self.__class__.PUT(path=self.resource_id, data=json.dumps(data))
+            self.resource_id = new_resource_info[resource_name]['id']
         else:
             resource_name = inflection.singularize(self.__class__._resource_path)
             data = { resource_name : self._save_params() }

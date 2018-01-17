@@ -9,3 +9,8 @@ class User(Resource):
 
     def _desc(self):
         return self.username
+
+    def post_init(self):
+        if not hasattr(self, 'group'):
+            user_group_info = self.get_resource_info('userGroup')
+            self.group = user_group_info['group']
