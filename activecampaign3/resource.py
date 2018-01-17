@@ -112,8 +112,11 @@ class Resource(object):
 
     @classmethod
     def get(klass, resource_id):
-        path = inflection.singularize(klass._resource_path)
-        return klass(**klass.GET(path=resource_id)[path])
+        path = klass.singular_resource_name()
+        full_info = klass.GET(path=resource_id)
+        resource = klass(**full_info.pop(path))
+        resource.post_refresh(full_info)
+        return resource
 
     @classmethod
     def GET(klass, path='', params=None):
@@ -227,17 +230,29 @@ class Resource(object):
                 del params[local_name]
         return { k:v for k, v in params.items() if k in self.__class__._valid_save_params }
 
+    def singular_resource_name(self):
+        return inflection.singularize(self.__class__._resource_path)
+
     def save(self):
+        resource_name = self.singular_resource_name()
         if hasattr(self, 'resource_id'):
-            resource_name = inflection.singularize(self.__class__._resource_path)
             data = { resource_name : self._save_params() }
             new_resource_info = self.__class__.PUT(path=self.resource_id, data=json.dumps(data))
             self.resource_id = new_resource_info[resource_name]['id']
         else:
-            resource_name = inflection.singularize(self.__class__._resource_path)
             data = { resource_name : self._save_params() }
             new_resource_info = self.__class__.POST(data=json.dumps(data))
             self.resource_id = new_resource_info[resource_name]['id']
+
+    def post_refresh(self):
+        pass
+
+    def refresh(self):
+        resource_name = self.singular_resource_name()
+        full_info = self.GET(self.resource_id)
+        resource_info = full_info.pop(resource_name)
+        self.__init__(**resource_info)
+        self.post_refresh(full_info)
 
     def delete(self):
         if not hasattr(self, 'resource_id'):

@@ -14,3 +14,5 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 h.setFormatter(formatter)
 logger.addHandler(h)
 logger.setLevel(log_level)
+
+logger.info("log init")
