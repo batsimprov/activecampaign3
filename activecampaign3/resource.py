@@ -16,6 +16,9 @@ class ActiveCampaignException(Exception):
     Parent class for wrapping error messages returned from the ActiveCampaign API.
     """
 
+class NotFound(ActiveCampaignException):
+    pass
+
 class InvalidParameters(ActiveCampaignException):
     def __init__(self, errors):
         assert len(errors) > 0
@@ -59,6 +62,9 @@ def check_status(response):
         pass
     elif response.status_code == 201:
         logger.info("resource created!")
+    elif response.status_code == 404:
+        logger.error(json.dumps(response.json(), sort_keys=True, indent=4))
+        raise NotFound(response.json()['message'])
     elif response.status_code == 422:
         logger.error(json.dumps(response.json(), sort_keys=True, indent=4))
         errors = response.json()['errors']
@@ -198,6 +204,8 @@ class Resource(object):
         return klass._rename_params_dict
 
     def __init__(self, **attrs):
+        logger.debug("initializing object with:")
+        logger.debug(json.dumps(attrs, sort_keys=True, indent=4))
         for local_name, remote_name in self.rename_params():
             if remote_name in attrs:
                 setattr(self, local_name, attrs[remote_name])
