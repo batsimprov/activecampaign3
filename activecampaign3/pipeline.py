@@ -1,6 +1,5 @@
 from activecampaign3.resource import Resource
 from activecampaign3.stage import Stage
-from activecampaign3.logger import logger
 
 class Pipeline(Resource):
     _resource_path = 'dealGroups'

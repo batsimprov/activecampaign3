@@ -23,6 +23,6 @@ http://developers.activecampaign.com/
 
 ALPHA SOFTWARE in early development
 
-Copy config-example.yml to config.yml and provide your API url and key.
+Copy config-example.yml to config.yml and provide your API url and key. TESTS ARE DESTRUCTIVE DO NOT RUN ON YOUR REAL ACCOUNT
 
 Licensed under the 3-clause BSD, see LICENSE.txt

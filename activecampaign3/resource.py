@@ -169,12 +169,23 @@ class Resource(object):
                 if not key in klass._valid_search_params:
                     logger.warn("search key '%s' may be ignored" % key)
         response = klass.GET(params=search)
+        logger.debug("raw search response:")
+        logger.debug(json.dumps(response, sort_keys=True, indent=4))
         return SearchResults(klass, response)
 
     @classmethod
-    def find_or_create(klass, params):
+    def filter_one(klass, search):
+        return klass.filter_all(search)[0]
+
+    @classmethod
+    def filter_all(klass, search):
+        return [resource
+                for resource in klass.search(search)
+                if all(getattr(resource, k) == v for (k, v) in search.items())]
+
+    @classmethod
+    def find_or_create(klass, **params):
         results = klass.search(params)
-        logger.debug(results.total.__class__)
         total = int(results.total)
         if total == 1:
             logger.debug("found unique record")
@@ -207,8 +218,6 @@ class Resource(object):
         return klass._rename_params_dict
 
     def __init__(self, **attrs):
-        logger.debug("initializing object with:")
-        logger.debug(json.dumps(attrs, sort_keys=True, indent=4))
         for local_name, remote_name in self.rename_params():
             if remote_name in attrs:
                 setattr(self, local_name, attrs[remote_name])
@@ -230,8 +239,9 @@ class Resource(object):
                 del params[local_name]
         return { k:v for k, v in params.items() if k in self.__class__._valid_save_params }
 
+    @classmethod
     def singular_resource_name(self):
-        return inflection.singularize(self.__class__._resource_path)
+        return inflection.singularize(self._resource_path)
 
     def save(self):
         resource_name = self.singular_resource_name()
@@ -241,11 +251,14 @@ class Resource(object):
             self.resource_id = new_resource_info[resource_name]['id']
         else:
             data = { resource_name : self._save_params() }
+            logger.debug("data is %s" % str(data))
             new_resource_info = self.__class__.POST(data=json.dumps(data))
             self.resource_id = new_resource_info[resource_name]['id']
+        return self # allow chaining
 
-    def post_refresh(self):
-        pass
+    def post_refresh(self, params):
+        logger.warn("passing params to default noop post_refresh")
+        logger.warn(str(params))
 
     def refresh(self):
         resource_name = self.singular_resource_name()

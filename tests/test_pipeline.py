@@ -1,5 +1,7 @@
 from activecampaign3.pipeline import Pipeline
 from activecampaign3.stage import Stage
+from activecampaign3.contact import Contact
+from activecampaign3.deal import Deal
 
 def test_delete_pipelines():
     sr = Pipeline.search()
@@ -9,6 +11,7 @@ def test_delete_pipelines():
 def test_create_pipeline():
     pipeline = Pipeline(
             title = "Private Donations",
+            autoassign = '1',
             currency = 'usd',
             )
     pipeline.save()
@@ -29,3 +32,18 @@ def test_create_pipeline():
     assert len(pipeline.stages) == 4
     assert pipeline.stages[3].resource_id == stage.resource_id
 
+def test_create_deal():
+    contact = Contact.find_or_create(
+            email = 'test3@example.com'
+            )
+
+    pipeline = Pipeline.search()[0]
+
+    deal = Deal(
+            customer = contact,
+            pipeline = pipeline,
+            currency = 'usd',
+            title = 'Big New Deal',
+            value = 100000
+            )
+    deal.save()

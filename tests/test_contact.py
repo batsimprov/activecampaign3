@@ -1,6 +1,11 @@
 from activecampaign3.contact import Contact
 from activecampaign3.resource import NotFound
 
+def test_clean_old_contacts():
+    sr = Contact.search()
+    for contact in sr:
+        contact.delete()
+
 def test_create_contacts():
     contact = Contact(
             email = 'test@example.com',

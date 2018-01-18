@@ -1,3 +1,4 @@
 inflection
 pyyaml
 requests
+dateparser
