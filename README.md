@@ -21,8 +21,10 @@ The activecampaign3 package integrates with Active Campaign's Version 3 API.
 
 http://developers.activecampaign.com/
 
-ALPHA SOFTWARE in early development
+ALPHA SOFTWARE in early development. See tests for usage examples.
 
-Copy config-example.yml to config.yml and provide your API url and key. TESTS ARE DESTRUCTIVE DO NOT RUN ON YOUR REAL ACCOUNT
+Copy config-example.yml to config.yml and provide your API url and key.
+
+TESTS ARE DESTRUCTIVE DO NOT RUN ON YOUR REAL ACCOUNT
 
 Licensed under the 3-clause BSD, see LICENSE.txt
