@@ -1,7 +1,11 @@
-from activecampaign3.resource import Resource
 from activecampaign3.contact import Contact
+from activecampaign3.logger import logger
 from activecampaign3.pipeline import Pipeline
+from activecampaign3.resource import Resource
 from enum import Enum
+
+class Note(Resource):
+    pass
 
 class Deal(Resource):
     Status = Enum('Status', (('Open', 0), ('Won', 1), ('Lost', 2)))
@@ -16,3 +20,16 @@ class Deal(Resource):
         if hasattr(self, 'pipeline') and isinstance(self.pipeline, Pipeline):
             self.pipeline_id = self.pipeline.resource_id
         return super()._save_params()
+
+    def add_note(self, text):
+        note_info = self.post_resource_info('notes', data={'note' : text})
+        logger.debug("returned note info is")
+        logger.debug(str(note_info))
+        # self.notes.append(Note(**note_info['note']))
+
+    def post_init(self):
+        if not hasattr(self, 'notes') and hasattr(self, 'resource_id'):
+            notes_info = self.get_resource_info('notes')
+            logger.debug("notes info:")
+            logger.debug(str(notes_info))
+            self.notes = []

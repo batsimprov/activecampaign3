@@ -110,6 +110,10 @@ class Resource(object):
     def get_resource_info(self, path):
         return self.__class__.GET("%s/%s" % (self.resource_id, path))[path]
 
+    def post_resource_info(self, path, params=None, data=None):
+        key = inflection.singularize(path)
+        return self.__class__.POST("%s/%s" % (self.resource_id, path), params=params, data={key:data})[key]
+
     @classmethod
     def get(klass, resource_id):
         path = klass.singular_resource_name()
@@ -136,7 +140,7 @@ class Resource(object):
             logger.debug("  with params %s" % str(params))
         if data is not None:
             logger.debug("  with data %s" % str(data))
-        response = POST(fullpath, params=params, data=data)
+        response = POST(fullpath, params=params, data=json.dumps(data))
         check_status(response)
         return response.json()
 
@@ -148,7 +152,7 @@ class Resource(object):
             logger.debug("  with params %s" % str(params))
         if data is not None:
             logger.debug("  with data %s" % str(data))
-        response = PUT(fullpath, params=params, data=data)
+        response = PUT(fullpath, params=params, data=json.dumps(data))
         check_status(response)
         return response.json()
 
@@ -247,12 +251,12 @@ class Resource(object):
         resource_name = self.singular_resource_name()
         if hasattr(self, 'resource_id'):
             data = { resource_name : self._save_params() }
-            new_resource_info = self.__class__.PUT(path=self.resource_id, data=json.dumps(data))
+            new_resource_info = self.__class__.PUT(path=self.resource_id, data=data)
             self.resource_id = new_resource_info[resource_name]['id']
         else:
             data = { resource_name : self._save_params() }
             logger.debug("data is %s" % str(data))
-            new_resource_info = self.__class__.POST(data=json.dumps(data))
+            new_resource_info = self.__class__.POST(data=data)
             self.resource_id = new_resource_info[resource_name]['id']
         return self # allow chaining
 

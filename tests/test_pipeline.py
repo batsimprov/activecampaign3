@@ -47,3 +47,10 @@ def test_create_deal():
             value = 100000
             )
     deal.save()
+
+def test_get_deal():
+    deals = Deal.search()
+    for deal in deals:
+        deal.add_note("Hey this is a really big deal.")
+        print(deal)
+        print(deal.notes)
