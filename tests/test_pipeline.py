@@ -49,8 +49,5 @@ def test_create_deal():
     deal.save()
 
 def test_get_deal():
-    deals = Deal.search()
-    for deal in deals:
-        deal.add_note("Hey this is a really big deal.")
-        print(deal)
-        print(deal.notes)
+    sr = Deal.search(search={'search' : 'Big', 'search_field' : 'title'})
+    print("found total of %s searches " % sr.total)
